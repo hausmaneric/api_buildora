@@ -536,7 +536,6 @@ SELECT id,
        phone,
        role,
        active,
-       last_login,
        created_at
   FROM master_users
  ORDER BY id DESC
@@ -550,7 +549,6 @@ SELECT id,
        phone,
        role,
        active,
-       last_login,
        created_at
   FROM master_users
  WHERE (%s = '' OR name ILIKE %s OR login ILIKE %s OR email ILIKE %s OR role ILIKE %s)
