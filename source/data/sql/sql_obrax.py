@@ -244,6 +244,42 @@ SELECT id,
  ORDER BY id DESC
 """
 
+SQL_MASTER_ACCOUNTS_LIST_PAGED = """
+SELECT id,
+       code,
+       name,
+       document,
+       email,
+       phone,
+       status,
+       plan_id,
+       storage_limit_mb,
+       storage_used_mb,
+       expiration_date,
+       active,
+       created_at,
+       updated_at
+  FROM accounts
+ WHERE (%s = '' OR code ILIKE %s OR name ILIKE %s OR email ILIKE %s OR document ILIKE %s)
+ ORDER BY
+   CASE WHEN %s = 'code' AND %s = 'asc' THEN code END ASC,
+   CASE WHEN %s = 'code' AND %s = 'desc' THEN code END DESC,
+   CASE WHEN %s = 'name' AND %s = 'asc' THEN name END ASC,
+   CASE WHEN %s = 'name' AND %s = 'desc' THEN name END DESC,
+   CASE WHEN %s = 'email' AND %s = 'asc' THEN email END ASC,
+   CASE WHEN %s = 'email' AND %s = 'desc' THEN email END DESC,
+   CASE WHEN %s = 'created_at' AND %s = 'asc' THEN created_at END ASC,
+   CASE WHEN %s = 'created_at' AND %s = 'desc' THEN created_at END DESC,
+   id DESC
+ LIMIT %s OFFSET %s
+"""
+
+SQL_MASTER_ACCOUNTS_COUNT = """
+SELECT COUNT(*) AS total
+  FROM accounts
+ WHERE (%s = '' OR code ILIKE %s OR name ILIKE %s OR email ILIKE %s OR document ILIKE %s)
+"""
+
 SQL_MASTER_ACCOUNT_INSERT = """
 INSERT INTO accounts (
     code,
@@ -268,6 +304,62 @@ INSERT INTO accounts (
 RETURNING id, code
 """
 
+SQL_MASTER_ACCOUNT_BY_ID = """
+SELECT id,
+       code,
+       name,
+       document,
+       phone,
+       email,
+       status,
+       plan_id,
+       database_url,
+       database_host,
+       database_port,
+       database_name,
+       database_user,
+       database_password,
+       database_sslmode,
+       storage_limit_mb,
+       storage_used_mb,
+       expiration_date,
+       active
+  FROM accounts
+ WHERE id = %s
+ LIMIT 1
+"""
+
+SQL_MASTER_ACCOUNT_UPDATE = """
+UPDATE accounts
+   SET code = %s,
+       name = %s,
+       document = %s,
+       phone = %s,
+       email = %s,
+       status = %s,
+       plan_id = %s,
+       database_url = %s,
+       database_host = %s,
+       database_port = %s,
+       database_name = %s,
+       database_user = %s,
+       database_password = %s,
+       database_sslmode = %s,
+       storage_limit_mb = %s,
+       storage_used_mb = %s,
+       expiration_date = %s,
+       active = %s,
+       updated_at = NOW()
+ WHERE id = %s
+RETURNING id, code
+"""
+
+SQL_MASTER_ACCOUNT_DELETE = """
+DELETE FROM accounts
+ WHERE id = %s
+RETURNING id
+"""
+
 SQL_MASTER_PLANS_LIST = """
 SELECT id,
        name,
@@ -281,6 +373,36 @@ SELECT id,
        created_at
   FROM plans
  ORDER BY id DESC
+"""
+
+SQL_MASTER_PLANS_LIST_PAGED = """
+SELECT id,
+       name,
+       description,
+       price,
+       max_companies,
+       max_users,
+       max_works,
+       max_storage_mb,
+       active,
+       created_at
+  FROM plans
+ WHERE (%s = '' OR name ILIKE %s OR description ILIKE %s)
+ ORDER BY
+   CASE WHEN %s = 'name' AND %s = 'asc' THEN name END ASC,
+   CASE WHEN %s = 'name' AND %s = 'desc' THEN name END DESC,
+   CASE WHEN %s = 'price' AND %s = 'asc' THEN price END ASC,
+   CASE WHEN %s = 'price' AND %s = 'desc' THEN price END DESC,
+   CASE WHEN %s = 'created_at' AND %s = 'asc' THEN created_at END ASC,
+   CASE WHEN %s = 'created_at' AND %s = 'desc' THEN created_at END DESC,
+   id DESC
+ LIMIT %s OFFSET %s
+"""
+
+SQL_MASTER_PLANS_COUNT = """
+SELECT COUNT(*) AS total
+  FROM plans
+ WHERE (%s = '' OR name ILIKE %s OR description ILIKE %s OR name ILIKE %s OR description ILIKE %s)
 """
 
 SQL_MASTER_PLAN_INSERT = """
@@ -297,6 +419,41 @@ INSERT INTO plans (
 RETURNING id
 """
 
+SQL_MASTER_PLAN_BY_ID = """
+SELECT id,
+       name,
+       description,
+       price,
+       max_companies,
+       max_users,
+       max_works,
+       max_storage_mb,
+       active
+  FROM plans
+ WHERE id = %s
+ LIMIT 1
+"""
+
+SQL_MASTER_PLAN_UPDATE = """
+UPDATE plans
+   SET name = %s,
+       description = %s,
+       price = %s,
+       max_companies = %s,
+       max_users = %s,
+       max_works = %s,
+       max_storage_mb = %s,
+       active = %s
+ WHERE id = %s
+RETURNING id
+"""
+
+SQL_MASTER_PLAN_DELETE = """
+DELETE FROM plans
+ WHERE id = %s
+RETURNING id
+"""
+
 SQL_MASTER_MODULES_LIST = """
 SELECT id,
        code,
@@ -308,6 +465,32 @@ SELECT id,
  ORDER BY id DESC
 """
 
+SQL_MASTER_MODULES_LIST_PAGED = """
+SELECT id,
+       code,
+       name,
+       description,
+       active,
+       created_at
+  FROM modules
+ WHERE (%s = '' OR code ILIKE %s OR name ILIKE %s OR description ILIKE %s)
+ ORDER BY
+   CASE WHEN %s = 'code' AND %s = 'asc' THEN code END ASC,
+   CASE WHEN %s = 'code' AND %s = 'desc' THEN code END DESC,
+   CASE WHEN %s = 'name' AND %s = 'asc' THEN name END ASC,
+   CASE WHEN %s = 'name' AND %s = 'desc' THEN name END DESC,
+   CASE WHEN %s = 'created_at' AND %s = 'asc' THEN created_at END ASC,
+   CASE WHEN %s = 'created_at' AND %s = 'desc' THEN created_at END DESC,
+   id DESC
+ LIMIT %s OFFSET %s
+"""
+
+SQL_MASTER_MODULES_COUNT = """
+SELECT COUNT(*) AS total
+  FROM modules
+ WHERE (%s = '' OR code ILIKE %s OR name ILIKE %s OR description ILIKE %s OR code ILIKE %s)
+"""
+
 SQL_MASTER_MODULE_INSERT = """
 INSERT INTO modules (
     code,
@@ -315,6 +498,33 @@ INSERT INTO modules (
     description,
     active
 ) VALUES (%s, %s, %s, %s)
+RETURNING id
+"""
+
+SQL_MASTER_MODULE_BY_ID = """
+SELECT id,
+       code,
+       name,
+       description,
+       active
+  FROM modules
+ WHERE id = %s
+ LIMIT 1
+"""
+
+SQL_MASTER_MODULE_UPDATE = """
+UPDATE modules
+   SET code = %s,
+       name = %s,
+       description = %s,
+       active = %s
+ WHERE id = %s
+RETURNING id
+"""
+
+SQL_MASTER_MODULE_DELETE = """
+DELETE FROM modules
+ WHERE id = %s
 RETURNING id
 """
 
@@ -332,6 +542,35 @@ SELECT id,
  ORDER BY id DESC
 """
 
+SQL_MASTER_USERS_LIST_PAGED = """
+SELECT id,
+       name,
+       login,
+       email,
+       phone,
+       role,
+       active,
+       last_login,
+       created_at
+  FROM master_users
+ WHERE (%s = '' OR name ILIKE %s OR login ILIKE %s OR email ILIKE %s OR role ILIKE %s)
+ ORDER BY
+   CASE WHEN %s = 'name' AND %s = 'asc' THEN name END ASC,
+   CASE WHEN %s = 'name' AND %s = 'desc' THEN name END DESC,
+   CASE WHEN %s = 'login' AND %s = 'asc' THEN login END ASC,
+   CASE WHEN %s = 'login' AND %s = 'desc' THEN login END DESC,
+   CASE WHEN %s = 'created_at' AND %s = 'asc' THEN created_at END ASC,
+   CASE WHEN %s = 'created_at' AND %s = 'desc' THEN created_at END DESC,
+   id DESC
+ LIMIT %s OFFSET %s
+"""
+
+SQL_MASTER_USERS_COUNT = """
+SELECT COUNT(*) AS total
+  FROM master_users
+ WHERE (%s = '' OR name ILIKE %s OR login ILIKE %s OR email ILIKE %s OR role ILIKE %s)
+"""
+
 SQL_MASTER_USER_INSERT = """
 INSERT INTO master_users (
     name,
@@ -342,6 +581,50 @@ INSERT INTO master_users (
     role,
     active
 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+RETURNING id
+"""
+
+SQL_MASTER_USER_BY_ID = """
+SELECT id,
+       name,
+       login,
+       email,
+       phone,
+       role,
+       active
+  FROM master_users
+ WHERE id = %s
+ LIMIT 1
+"""
+
+SQL_MASTER_USER_UPDATE = """
+UPDATE master_users
+   SET name = %s,
+       login = %s,
+       email = %s,
+       phone = %s,
+       role = %s,
+       active = %s
+ WHERE id = %s
+RETURNING id
+"""
+
+SQL_MASTER_USER_UPDATE_WITH_PASSWORD = """
+UPDATE master_users
+   SET name = %s,
+       login = %s,
+       password_hash = %s,
+       email = %s,
+       phone = %s,
+       role = %s,
+       active = %s
+ WHERE id = %s
+RETURNING id
+"""
+
+SQL_MASTER_USER_DELETE = """
+DELETE FROM master_users
+ WHERE id = %s
 RETURNING id
 """
 
@@ -361,14 +644,48 @@ SELECT id,
 SQL_ACCOUNT_MODULES_LIST = """
 SELECT am.id,
        am.account_id,
+       a.name AS account_name,
        am.module_id,
        m.code AS module_code,
        m.name AS module_name,
        am.active,
        am.created_at
   FROM account_modules am
+  JOIN accounts a ON a.id = am.account_id
   JOIN modules m ON m.id = am.module_id
  ORDER BY am.id DESC
+"""
+
+SQL_ACCOUNT_MODULES_LIST_PAGED = """
+SELECT am.id,
+       am.account_id,
+       a.name AS account_name,
+       am.module_id,
+       m.code AS module_code,
+       m.name AS module_name,
+       am.active,
+       am.created_at
+  FROM account_modules am
+  JOIN accounts a ON a.id = am.account_id
+  JOIN modules m ON m.id = am.module_id
+ WHERE (%s = '' OR a.name ILIKE %s OR m.code ILIKE %s OR m.name ILIKE %s)
+ ORDER BY
+   CASE WHEN %s = 'account_name' AND %s = 'asc' THEN a.name END ASC,
+   CASE WHEN %s = 'account_name' AND %s = 'desc' THEN a.name END DESC,
+   CASE WHEN %s = 'module_code' AND %s = 'asc' THEN m.code END ASC,
+   CASE WHEN %s = 'module_code' AND %s = 'desc' THEN m.code END DESC,
+   CASE WHEN %s = 'created_at' AND %s = 'asc' THEN am.created_at END ASC,
+   CASE WHEN %s = 'created_at' AND %s = 'desc' THEN am.created_at END DESC,
+   am.id DESC
+ LIMIT %s OFFSET %s
+"""
+
+SQL_ACCOUNT_MODULES_COUNT = """
+SELECT COUNT(*) AS total
+  FROM account_modules am
+  JOIN accounts a ON a.id = am.account_id
+  JOIN modules m ON m.id = am.module_id
+ WHERE (%s = '' OR a.name ILIKE %s OR m.code ILIKE %s OR m.name ILIKE %s OR a.name ILIKE %s)
 """
 
 SQL_ACCOUNT_MODULE_INSERT = """
@@ -377,6 +694,32 @@ INSERT INTO account_modules (
     module_id,
     active
 ) VALUES (%s, %s, %s)
+RETURNING id
+"""
+
+SQL_ACCOUNT_MODULE_BY_ID = """
+SELECT id,
+       account_id,
+       module_id,
+       active,
+       created_at
+  FROM account_modules
+ WHERE id = %s
+ LIMIT 1
+"""
+
+SQL_ACCOUNT_MODULE_UPDATE = """
+UPDATE account_modules
+   SET account_id = %s,
+       module_id = %s,
+       active = %s
+ WHERE id = %s
+RETURNING id
+"""
+
+SQL_ACCOUNT_MODULE_DELETE = """
+DELETE FROM account_modules
+ WHERE id = %s
 RETURNING id
 """
 

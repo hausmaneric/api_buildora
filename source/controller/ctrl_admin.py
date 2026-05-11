@@ -11,10 +11,17 @@ def _setup_key_valid() -> bool:
     return bool(appConfig.setupKey) and header_key == appConfig.setupKey
 
 
-@app.route('/api/v1/admin/accounts/<token_id>', methods=['GET', 'POST'])
+def _request_payload() -> dict:
+    payload = request.get_json(silent=True)
+    if payload:
+        return payload
+    return request.args.to_dict()
+
+
+@app.route('/api/v1/admin/accounts/<token_id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_accounts(token_id):
     r = NXResult()
-    data = request.get_json(silent=True)
+    data = _request_payload()
 
     try:
         nx = NXConnection()
@@ -22,10 +29,20 @@ def admin_accounts(token_id):
 
         if r.status is True:
             if request.method == 'GET':
-                r = admin_accounts_list(nx)
+                r = admin_accounts_list(nx, data)
             elif request.method == 'POST':
                 if data:
                     r = admin_accounts_create(nx, data)
+                else:
+                    r.make_error(0, 'Dados invalidos enviados')
+            elif request.method == 'PUT':
+                if data:
+                    r = admin_accounts_update(nx, data)
+                else:
+                    r.make_error(0, 'Dados invalidos enviados')
+            elif request.method == 'DELETE':
+                if data:
+                    r = admin_accounts_delete(nx, data)
                 else:
                     r.make_error(0, 'Dados invalidos enviados')
     except Exception as e:
@@ -34,10 +51,10 @@ def admin_accounts(token_id):
     return r.toJSON()
 
 
-@app.route('/api/v1/admin/plans/<token_id>', methods=['GET', 'POST'])
+@app.route('/api/v1/admin/plans/<token_id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_plans(token_id):
     r = NXResult()
-    data = request.get_json(silent=True)
+    data = _request_payload()
 
     try:
         nx = NXConnection()
@@ -45,10 +62,20 @@ def admin_plans(token_id):
 
         if r.status is True:
             if request.method == 'GET':
-                r = admin_plans_list(nx)
+                r = admin_plans_list(nx, data)
             elif request.method == 'POST':
                 if data:
                     r = admin_plans_create(nx, data)
+                else:
+                    r.make_error(0, 'Dados invalidos enviados')
+            elif request.method == 'PUT':
+                if data:
+                    r = admin_plans_update(nx, data)
+                else:
+                    r.make_error(0, 'Dados invalidos enviados')
+            elif request.method == 'DELETE':
+                if data:
+                    r = admin_plans_delete(nx, data)
                 else:
                     r.make_error(0, 'Dados invalidos enviados')
     except Exception as e:
@@ -57,10 +84,10 @@ def admin_plans(token_id):
     return r.toJSON()
 
 
-@app.route('/api/v1/admin/modules/<token_id>', methods=['GET', 'POST'])
+@app.route('/api/v1/admin/modules/<token_id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_modules(token_id):
     r = NXResult()
-    data = request.get_json(silent=True)
+    data = _request_payload()
 
     try:
         nx = NXConnection()
@@ -68,10 +95,20 @@ def admin_modules(token_id):
 
         if r.status is True:
             if request.method == 'GET':
-                r = admin_modules_list(nx)
+                r = admin_modules_list(nx, data)
             elif request.method == 'POST':
                 if data:
                     r = admin_modules_create(nx, data)
+                else:
+                    r.make_error(0, 'Dados invalidos enviados')
+            elif request.method == 'PUT':
+                if data:
+                    r = admin_modules_update(nx, data)
+                else:
+                    r.make_error(0, 'Dados invalidos enviados')
+            elif request.method == 'DELETE':
+                if data:
+                    r = admin_modules_delete(nx, data)
                 else:
                     r.make_error(0, 'Dados invalidos enviados')
     except Exception as e:
@@ -80,10 +117,10 @@ def admin_modules(token_id):
     return r.toJSON()
 
 
-@app.route('/api/v1/admin/account_modules/<token_id>', methods=['GET', 'POST'])
+@app.route('/api/v1/admin/account_modules/<token_id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_account_modules(token_id):
     r = NXResult()
-    data = request.get_json(silent=True)
+    data = _request_payload()
 
     try:
         nx = NXConnection()
@@ -91,10 +128,20 @@ def admin_account_modules(token_id):
 
         if r.status is True:
             if request.method == 'GET':
-                r = admin_account_modules_list(nx)
+                r = admin_account_modules_list(nx, data)
             elif request.method == 'POST':
                 if data:
                     r = admin_account_modules_create(nx, data)
+                else:
+                    r.make_error(0, 'Dados invalidos enviados')
+            elif request.method == 'PUT':
+                if data:
+                    r = admin_account_modules_update(nx, data)
+                else:
+                    r.make_error(0, 'Dados invalidos enviados')
+            elif request.method == 'DELETE':
+                if data:
+                    r = admin_account_modules_delete(nx, data)
                 else:
                     r.make_error(0, 'Dados invalidos enviados')
     except Exception as e:
@@ -103,10 +150,10 @@ def admin_account_modules(token_id):
     return r.toJSON()
 
 
-@app.route('/api/v1/admin/master_users/<token_id>', methods=['GET', 'POST'])
+@app.route('/api/v1/admin/master_users/<token_id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_master_users(token_id):
     r = NXResult()
-    data = request.get_json(silent=True)
+    data = _request_payload()
 
     try:
         nx = NXConnection()
@@ -114,10 +161,20 @@ def admin_master_users(token_id):
 
         if r.status is True:
             if request.method == 'GET':
-                r = admin_master_users_list(nx)
+                r = admin_master_users_list(nx, data)
             elif request.method == 'POST':
                 if data:
                     r = admin_master_users_create(nx, data)
+                else:
+                    r.make_error(0, 'Dados invalidos enviados')
+            elif request.method == 'PUT':
+                if data:
+                    r = admin_master_users_update(nx, data)
+                else:
+                    r.make_error(0, 'Dados invalidos enviados')
+            elif request.method == 'DELETE':
+                if data:
+                    r = admin_master_users_delete(nx, data)
                 else:
                     r.make_error(0, 'Dados invalidos enviados')
     except Exception as e:

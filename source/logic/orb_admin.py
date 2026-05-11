@@ -5,23 +5,49 @@ from source.core.system.database import NXMasterConnection
 from source.core.system.security import hash_password, write_audit_log
 from source.core.system.utils import NXResult, process_error_message, success_message
 from source.data.sql.sql_obrax import (
+    SQL_ACCOUNT_MODULE_BY_ID,
     SQL_ACCOUNT_MODULE_BY_ACCOUNT_AND_MODULE,
+    SQL_ACCOUNT_MODULES_COUNT,
+    SQL_ACCOUNT_MODULE_DELETE,
     SQL_ACCOUNT_MODULE_INSERT,
     SQL_ACCOUNT_MODULES_LIST,
+    SQL_ACCOUNT_MODULES_LIST_PAGED,
+    SQL_ACCOUNT_MODULE_UPDATE,
     SQL_DATABASE_METADATA_BY_KEY,
     SQL_DATABASE_METADATA_UPSERT,
+    SQL_MASTER_ACCOUNT_BY_ID,
+    SQL_MASTER_ACCOUNTS_COUNT,
+    SQL_MASTER_ACCOUNT_DELETE,
     SQL_MASTER_ACCOUNT_INSERT,
     SQL_MASTER_ACCOUNTS_LIST,
+    SQL_MASTER_ACCOUNTS_LIST_PAGED,
+    SQL_MASTER_ACCOUNT_UPDATE,
+    SQL_MASTER_MODULE_BY_ID,
     SQL_MASTER_MODULE_INSERT,
     SQL_MASTER_MODULE_BY_CODE,
+    SQL_MASTER_MODULES_COUNT,
+    SQL_MASTER_MODULE_DELETE,
     SQL_MASTER_MODULES_LIST,
+    SQL_MASTER_MODULES_LIST_PAGED,
+    SQL_MASTER_MODULE_UPDATE,
+    SQL_MASTER_PLAN_BY_ID,
     SQL_MASTER_PLAN_INSERT,
+    SQL_MASTER_PLANS_COUNT,
+    SQL_MASTER_PLAN_DELETE,
     SQL_MASTER_PLAN_BY_NAME,
+    SQL_MASTER_PLANS_LIST_PAGED,
+    SQL_MASTER_PLAN_UPDATE,
     SQL_TABLE_EXISTS,
+    SQL_MASTER_USER_BY_ID,
     SQL_MASTER_USER_BY_LOGIN,
+    SQL_MASTER_USERS_COUNT,
+    SQL_MASTER_USER_DELETE,
     SQL_MASTER_PLANS_LIST,
     SQL_MASTER_USER_INSERT,
+    SQL_MASTER_USERS_LIST_PAGED,
     SQL_MASTER_USERS_LIST,
+    SQL_MASTER_USER_UPDATE,
+    SQL_MASTER_USER_UPDATE_WITH_PASSWORD,
 )
 
 
@@ -86,7 +112,119 @@ def _list_master(nx: Any, sql: str, error_message: str) -> NXResult:
     return result
 
 
-def admin_accounts_list(nx: Any) -> NXResult:
+def _paged_total(nx: Any, sql: str, search_value: str) -> int:
+    try:
+        like = f'%{search_value}%'
+        rs = nx.xp_nx.FDXQuery(sql, search_value, like, like, like, like)
+        if rs.error or rs.dataset.recordcount == 0:
+            return 0
+        return int(rs.dataset.fieldbyname('total', 0) or 0)
+    except Exception:
+        return 0
+
+
+def _paged_master(nx: Any, sql: str, count_sql: str | None, search: str, sort_field: str, sort_direction: str, limit: int, offset: int, error_message: str) -> NXResult:
+    result = _master_scope_ok(nx)
+    if result.error:
+        return result
+
+    result = NXResult()
+    try:
+        search_value = search.strip()
+        like = f'%{search_value}%'
+        rs = nx.xp_nx.FDXQuery(
+            sql,
+            search_value,
+            like,
+            like,
+            like,
+            like,
+            sort_field,
+            sort_direction,
+            sort_field,
+            sort_direction,
+            sort_field,
+            sort_direction,
+            sort_field,
+            sort_direction,
+            sort_field,
+            sort_direction,
+            sort_field,
+            sort_direction,
+            limit,
+            offset,
+        )
+        if not rs.error:
+            result.status = True
+            items = rs.dataset.recordset
+            total = _paged_total(nx, count_sql, search_value) if count_sql else len(items)
+            result.data = {
+                'items': items,
+                'pagination': {
+                    'limit': limit,
+                    'offset': offset,
+                    'returned': len(items),
+                    'total': total,
+                    'has_next': len(items) == limit,
+                },
+                'filters': {
+                    'search': search_value,
+                    'sort_field': sort_field,
+                    'sort_direction': sort_direction,
+                },
+            }
+        else:
+            result.make_error(0, error_message, rs.message)
+    except Exception as e:
+        result.make_error(0, error_message, str(e))
+    return result
+
+
+def _request_paging(data: Any) -> tuple[str, str, str, int, int]:
+    search = (data.get('search') or '').strip()
+    sort_field = (data.get('sort_field') or data.get('sort_by') or 'created_at').strip()
+    sort_direction = (data.get('sort_direction') or data.get('sort_dir') or 'desc').strip().lower()
+    if sort_direction not in {'asc', 'desc'}:
+        sort_direction = 'desc'
+    limit = int(data.get('limit', 20) or 20)
+    offset = int(data.get('offset', 0) or 0)
+    limit = max(1, min(limit, 200))
+    offset = max(0, offset)
+    return search, sort_field, sort_direction, limit, offset
+
+
+def _get_record(nx: Any, sql: str, record_id: Any, error_message: str) -> tuple[NXResult, dict[str, Any] | None]:
+    result = NXResult()
+    try:
+        rs = nx.xp_nx.FDXQuery(sql, record_id)
+        if rs.error:
+            result.make_error(0, error_message, rs.message)
+            return result, None
+        if rs.dataset.recordcount == 0:
+            result.make_error(0, 'Registro nao localizado')
+            return result, None
+        result.status = True
+        return result, rs.dataset.recordset[0]
+    except Exception as e:
+        result.make_error(0, error_message, str(e))
+        return result, None
+
+
+def admin_accounts_list(nx: Any, data: Any | None = None) -> NXResult:
+    payload = data or {}
+    if any(key in payload for key in ('search', 'sort_field', 'sort_direction', 'limit', 'offset')):
+        search, sort_field, sort_direction, limit, offset = _request_paging(payload)
+        return _paged_master(
+            nx,
+            SQL_MASTER_ACCOUNTS_LIST_PAGED,
+            SQL_MASTER_ACCOUNTS_COUNT,
+            search,
+            sort_field,
+            sort_direction,
+            limit,
+            offset,
+            'Erro ao consultar contas administrativas',
+        )
     return _list_master(nx, SQL_MASTER_ACCOUNTS_LIST, 'Erro ao consultar contas administrativas')
 
 
@@ -141,7 +279,82 @@ def admin_accounts_create(nx: Any, data: Any) -> NXResult:
     return result
 
 
-def admin_plans_list(nx: Any) -> NXResult:
+def admin_accounts_update(nx: Any, data: Any) -> NXResult:
+    result = _master_scope_ok(nx)
+    if result.error:
+        return result
+
+    record_id = data.get('id')
+    loaded, current = _get_record(nx, SQL_MASTER_ACCOUNT_BY_ID, record_id, 'Erro ao consultar conta')
+    if loaded.error:
+        return loaded
+
+    result = NXResult()
+    try:
+        rs = nx.xp_nx.FDXQuery(
+            SQL_MASTER_ACCOUNT_UPDATE,
+            data.get('code', current.get('code')),
+            data.get('name', current.get('name')),
+            data.get('document', current.get('document')),
+            data.get('phone', current.get('phone')),
+            data.get('email', current.get('email')),
+            data.get('status', current.get('status')),
+            data.get('plan_id', current.get('plan_id')),
+            data.get('database_url', current.get('database_url')),
+            data.get('database_host', current.get('database_host')),
+            data.get('database_port', current.get('database_port')),
+            data.get('database_name', current.get('database_name')),
+            data.get('database_user', current.get('database_user')),
+            data.get('database_password', current.get('database_password')),
+            data.get('database_sslmode', current.get('database_sslmode')),
+            data.get('storage_limit_mb', current.get('storage_limit_mb')),
+            data.get('storage_used_mb', current.get('storage_used_mb')),
+            data.get('expiration_date', current.get('expiration_date')),
+            data.get('active', current.get('active')),
+            record_id,
+        )
+        if not rs.error:
+            write_audit_log(_master_audit_connection(nx), record_id, _session_user_id(nx), 'admin', 'put', 'accounts', record_id, '', data)
+            result.status = True
+            result.message = success_message('Conta', 'update')
+            result.data = rs.dataset.recordset[0] if rs.dataset.recordset else {'id': record_id}
+        else:
+            result.make_error(0, 'Erro ao atualizar conta', rs.message)
+    except Exception as e:
+        result.make_error(0, process_error_message('conta', 'update'), str(e))
+    return result
+
+
+def admin_accounts_delete(nx: Any, data: Any) -> NXResult:
+    result = _master_scope_ok(nx)
+    if result.error:
+        return result
+
+    record_id = data.get('id')
+    loaded, _ = _get_record(nx, SQL_MASTER_ACCOUNT_BY_ID, record_id, 'Erro ao consultar conta')
+    if loaded.error:
+        return loaded
+
+    result = NXResult()
+    try:
+        rs = nx.xp_nx.FDXQuery(SQL_MASTER_ACCOUNT_DELETE, record_id)
+        if not rs.error:
+            write_audit_log(_master_audit_connection(nx), record_id, _session_user_id(nx), 'admin', 'delete', 'accounts', record_id, '', {'id': record_id})
+            result.status = True
+            result.message = success_message('Conta', 'delete')
+            result.data = rs.dataset.recordset[0] if rs.dataset.recordset else {'id': record_id}
+        else:
+            result.make_error(0, 'Erro ao excluir conta', rs.message)
+    except Exception as e:
+        result.make_error(0, process_error_message('conta', 'delete'), str(e))
+    return result
+
+
+def admin_plans_list(nx: Any, data: Any | None = None) -> NXResult:
+    payload = data or {}
+    if any(key in payload for key in ('search', 'sort_field', 'sort_direction', 'limit', 'offset')):
+        search, sort_field, sort_direction, limit, offset = _request_paging(payload)
+        return _paged_master(nx, SQL_MASTER_PLANS_LIST_PAGED, SQL_MASTER_PLANS_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar planos administrativos')
     return _list_master(nx, SQL_MASTER_PLANS_LIST, 'Erro ao consultar planos administrativos')
 
 
@@ -186,7 +399,68 @@ def admin_plans_create(nx: Any, data: Any) -> NXResult:
     return result
 
 
-def admin_modules_list(nx: Any) -> NXResult:
+def admin_plans_update(nx: Any, data: Any) -> NXResult:
+    result = _master_scope_ok(nx)
+    if result.error:
+        return result
+    record_id = data.get('id')
+    loaded, current = _get_record(nx, SQL_MASTER_PLAN_BY_ID, record_id, 'Erro ao consultar plano')
+    if loaded.error:
+        return loaded
+    result = NXResult()
+    try:
+        rs = nx.xp_nx.FDXQuery(
+            SQL_MASTER_PLAN_UPDATE,
+            data.get('name', current.get('name')),
+            data.get('description', current.get('description')),
+            data.get('price', current.get('price')),
+            data.get('max_companies', current.get('max_companies')),
+            data.get('max_users', current.get('max_users')),
+            data.get('max_works', current.get('max_works')),
+            data.get('max_storage_mb', current.get('max_storage_mb')),
+            data.get('active', current.get('active')),
+            record_id,
+        )
+        if not rs.error:
+            write_audit_log(_master_audit_connection(nx), None, _session_user_id(nx), 'admin', 'put', 'plans', record_id, '', data)
+            result.status = True
+            result.message = success_message('Plano', 'update')
+            result.data = rs.dataset.recordset[0] if rs.dataset.recordset else {'id': record_id}
+        else:
+            result.make_error(0, 'Erro ao atualizar plano', rs.message)
+    except Exception as e:
+        result.make_error(0, process_error_message('plano', 'update'), str(e))
+    return result
+
+
+def admin_plans_delete(nx: Any, data: Any) -> NXResult:
+    result = _master_scope_ok(nx)
+    if result.error:
+        return result
+    record_id = data.get('id')
+    loaded, _ = _get_record(nx, SQL_MASTER_PLAN_BY_ID, record_id, 'Erro ao consultar plano')
+    if loaded.error:
+        return loaded
+    result = NXResult()
+    try:
+        rs = nx.xp_nx.FDXQuery(SQL_MASTER_PLAN_DELETE, record_id)
+        if not rs.error:
+            write_audit_log(_master_audit_connection(nx), None, _session_user_id(nx), 'admin', 'delete', 'plans', record_id, '', {'id': record_id})
+            result.status = True
+            result.message = success_message('Plano', 'delete')
+            result.data = rs.dataset.recordset[0] if rs.dataset.recordset else {'id': record_id}
+        else:
+            result.make_error(0, 'Erro ao excluir plano', rs.message)
+    except Exception as e:
+        result.make_error(0, process_error_message('plano', 'delete'), str(e))
+    return result
+
+
+def admin_modules_list(nx: Any, data: Any | None = None) -> NXResult:
+    payload = data or {}
+    if any(key in payload for key in ('search', 'sort_field', 'sort_direction', 'limit', 'offset')):
+        search, sort_field, sort_direction, limit, offset = _request_paging(payload)
+        return _paged_master(nx, SQL_MASTER_MODULES_LIST_PAGED, SQL_MASTER_MODULES_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar modulos administrativos')
     return _list_master(nx, SQL_MASTER_MODULES_LIST, 'Erro ao consultar modulos administrativos')
 
 
@@ -237,7 +511,64 @@ def admin_modules_create(nx: Any, data: Any) -> NXResult:
     return result
 
 
-def admin_account_modules_list(nx: Any) -> NXResult:
+def admin_modules_update(nx: Any, data: Any) -> NXResult:
+    result = _master_scope_ok(nx)
+    if result.error:
+        return result
+    record_id = data.get('id')
+    loaded, current = _get_record(nx, SQL_MASTER_MODULE_BY_ID, record_id, 'Erro ao consultar modulo')
+    if loaded.error:
+        return loaded
+    result = NXResult()
+    try:
+        rs = nx.xp_nx.FDXQuery(
+            SQL_MASTER_MODULE_UPDATE,
+            data.get('code', current.get('code')),
+            data.get('name', current.get('name')),
+            data.get('description', current.get('description')),
+            data.get('active', current.get('active')),
+            record_id,
+        )
+        if not rs.error:
+            write_audit_log(_master_audit_connection(nx), None, _session_user_id(nx), 'admin', 'put', 'modules', record_id, '', data)
+            result.status = True
+            result.message = success_message('Modulo', 'update')
+            result.data = rs.dataset.recordset[0] if rs.dataset.recordset else {'id': record_id}
+        else:
+            result.make_error(0, 'Erro ao atualizar modulo', rs.message)
+    except Exception as e:
+        result.make_error(0, process_error_message('modulo', 'update'), str(e))
+    return result
+
+
+def admin_modules_delete(nx: Any, data: Any) -> NXResult:
+    result = _master_scope_ok(nx)
+    if result.error:
+        return result
+    record_id = data.get('id')
+    loaded, _ = _get_record(nx, SQL_MASTER_MODULE_BY_ID, record_id, 'Erro ao consultar modulo')
+    if loaded.error:
+        return loaded
+    result = NXResult()
+    try:
+        rs = nx.xp_nx.FDXQuery(SQL_MASTER_MODULE_DELETE, record_id)
+        if not rs.error:
+            write_audit_log(_master_audit_connection(nx), None, _session_user_id(nx), 'admin', 'delete', 'modules', record_id, '', {'id': record_id})
+            result.status = True
+            result.message = success_message('Modulo', 'delete')
+            result.data = rs.dataset.recordset[0] if rs.dataset.recordset else {'id': record_id}
+        else:
+            result.make_error(0, 'Erro ao excluir modulo', rs.message)
+    except Exception as e:
+        result.make_error(0, process_error_message('modulo', 'delete'), str(e))
+    return result
+
+
+def admin_account_modules_list(nx: Any, data: Any | None = None) -> NXResult:
+    payload = data or {}
+    if any(key in payload for key in ('search', 'sort_field', 'sort_direction', 'limit', 'offset')):
+        search, sort_field, sort_direction, limit, offset = _request_paging(payload)
+        return _paged_master(nx, SQL_ACCOUNT_MODULES_LIST_PAGED, SQL_ACCOUNT_MODULES_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar modulos da conta')
     return _list_master(nx, SQL_ACCOUNT_MODULES_LIST, 'Erro ao consultar modulos da conta')
 
 
@@ -311,7 +642,79 @@ def admin_account_modules_create(nx: Any, data: Any) -> NXResult:
     return result
 
 
-def admin_master_users_list(nx: Any) -> NXResult:
+def admin_account_modules_update(nx: Any, data: Any) -> NXResult:
+    result = _master_scope_ok(nx)
+    if result.error:
+        return result
+
+    record_id = data.get('id')
+    loaded, current = _get_record(nx, SQL_ACCOUNT_MODULE_BY_ID, record_id, 'Erro ao consultar vinculo de modulo')
+    if loaded.error:
+        return loaded
+
+    module_id = data.get('module_id', current.get('module_id'))
+    module_code = data.get('module_code')
+    if module_code:
+        module_rs = nx.xp_nx.FDXQuery(SQL_MASTER_MODULE_BY_CODE, module_code)
+        if module_rs.error:
+            result = NXResult()
+            result.make_error(0, 'Erro ao localizar modulo pelo codigo', module_rs.message)
+            return result
+        if module_rs.dataset.recordcount == 0:
+            result = NXResult()
+            result.make_error(0, f'Modulo nao localizado para o codigo {module_code}')
+            return result
+        module_id = module_rs.dataset.recordset[0].get('id')
+
+    result = NXResult()
+    try:
+        rs = nx.xp_nx.FDXQuery(
+            SQL_ACCOUNT_MODULE_UPDATE,
+            data.get('account_id', current.get('account_id')),
+            module_id,
+            data.get('active', current.get('active')),
+            record_id,
+        )
+        if not rs.error:
+            write_audit_log(_master_audit_connection(nx), data.get('account_id', current.get('account_id')), _session_user_id(nx), 'admin', 'put', 'account_modules', record_id, '', data)
+            result.status = True
+            result.message = success_message('Vinculo de modulo', 'update')
+            result.data = rs.dataset.recordset[0] if rs.dataset.recordset else {'id': record_id}
+        else:
+            result.make_error(0, 'Erro ao atualizar vinculo de modulo', rs.message)
+    except Exception as e:
+        result.make_error(0, process_error_message('vinculo de modulo', 'update'), str(e))
+    return result
+
+
+def admin_account_modules_delete(nx: Any, data: Any) -> NXResult:
+    result = _master_scope_ok(nx)
+    if result.error:
+        return result
+    record_id = data.get('id')
+    loaded, current = _get_record(nx, SQL_ACCOUNT_MODULE_BY_ID, record_id, 'Erro ao consultar vinculo de modulo')
+    if loaded.error:
+        return loaded
+    result = NXResult()
+    try:
+        rs = nx.xp_nx.FDXQuery(SQL_ACCOUNT_MODULE_DELETE, record_id)
+        if not rs.error:
+            write_audit_log(_master_audit_connection(nx), current.get('account_id'), _session_user_id(nx), 'admin', 'delete', 'account_modules', record_id, '', {'id': record_id})
+            result.status = True
+            result.message = success_message('Vinculo de modulo', 'delete')
+            result.data = rs.dataset.recordset[0] if rs.dataset.recordset else {'id': record_id}
+        else:
+            result.make_error(0, 'Erro ao excluir vinculo de modulo', rs.message)
+    except Exception as e:
+        result.make_error(0, process_error_message('vinculo de modulo', 'delete'), str(e))
+    return result
+
+
+def admin_master_users_list(nx: Any, data: Any | None = None) -> NXResult:
+    payload = data or {}
+    if any(key in payload for key in ('search', 'sort_field', 'sort_direction', 'limit', 'offset')):
+        search, sort_field, sort_direction, limit, offset = _request_paging(payload)
+        return _paged_master(nx, SQL_MASTER_USERS_LIST_PAGED, SQL_MASTER_USERS_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar usuarios master')
     return _list_master(nx, SQL_MASTER_USERS_LIST, 'Erro ao consultar usuarios master')
 
 
@@ -360,6 +763,76 @@ def admin_master_users_create(nx: Any, data: Any) -> NXResult:
             result.make_error(0, 'Erro ao cadastrar usuario master', rs.message)
     except Exception as e:
         result.make_error(0, process_error_message('usuario master', 'create'), str(e))
+    return result
+
+
+def admin_master_users_update(nx: Any, data: Any) -> NXResult:
+    result = _master_scope_ok(nx)
+    if result.error:
+        return result
+    record_id = data.get('id')
+    loaded, current = _get_record(nx, SQL_MASTER_USER_BY_ID, record_id, 'Erro ao consultar usuario master')
+    if loaded.error:
+        return loaded
+    result = NXResult()
+    try:
+        password = data.get('password')
+        if password:
+            rs = nx.xp_nx.FDXQuery(
+                SQL_MASTER_USER_UPDATE_WITH_PASSWORD,
+                data.get('name', current.get('name')),
+                data.get('login', current.get('login')),
+                hash_password(password),
+                data.get('email', current.get('email')),
+                data.get('phone', current.get('phone')),
+                data.get('role', current.get('role')),
+                data.get('active', current.get('active')),
+                record_id,
+            )
+        else:
+            rs = nx.xp_nx.FDXQuery(
+                SQL_MASTER_USER_UPDATE,
+                data.get('name', current.get('name')),
+                data.get('login', current.get('login')),
+                data.get('email', current.get('email')),
+                data.get('phone', current.get('phone')),
+                data.get('role', current.get('role')),
+                data.get('active', current.get('active')),
+                record_id,
+            )
+        if not rs.error:
+            audit_data = {k: v for k, v in data.items() if k != 'password'}
+            write_audit_log(_master_audit_connection(nx), None, _session_user_id(nx), 'admin', 'put', 'master_users', record_id, '', audit_data)
+            result.status = True
+            result.message = success_message('Usuario master', 'update')
+            result.data = rs.dataset.recordset[0] if rs.dataset.recordset else {'id': record_id}
+        else:
+            result.make_error(0, 'Erro ao atualizar usuario master', rs.message)
+    except Exception as e:
+        result.make_error(0, process_error_message('usuario master', 'update'), str(e))
+    return result
+
+
+def admin_master_users_delete(nx: Any, data: Any) -> NXResult:
+    result = _master_scope_ok(nx)
+    if result.error:
+        return result
+    record_id = data.get('id')
+    loaded, _ = _get_record(nx, SQL_MASTER_USER_BY_ID, record_id, 'Erro ao consultar usuario master')
+    if loaded.error:
+        return loaded
+    result = NXResult()
+    try:
+        rs = nx.xp_nx.FDXQuery(SQL_MASTER_USER_DELETE, record_id)
+        if not rs.error:
+            write_audit_log(_master_audit_connection(nx), None, _session_user_id(nx), 'admin', 'delete', 'master_users', record_id, '', {'id': record_id})
+            result.status = True
+            result.message = success_message('Usuario master', 'delete')
+            result.data = rs.dataset.recordset[0] if rs.dataset.recordset else {'id': record_id}
+        else:
+            result.make_error(0, 'Erro ao excluir usuario master', rs.message)
+    except Exception as e:
+        result.make_error(0, process_error_message('usuario master', 'delete'), str(e))
     return result
 
 
