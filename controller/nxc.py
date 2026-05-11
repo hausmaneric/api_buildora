@@ -1,0 +1,15 @@
+﻿OBRAX_API_NAME = 'OBRAX API'
+OBRAX_API_VERSION = '1.0.0'
+OBRAX_DATABASE_URL = ''
+OBRAX_DB_HOST = 'localhost'
+OBRAX_DB_PORT = 5432
+OBRAX_DB_NAME = 'obrax'
+OBRAX_DB_USER = 'postgres'
+OBRAX_DB_PASSWORD = ''
+OBRAX_DB_SSLMODE = 'prefer'
+OBRAX_SECRET_KEY = 'change-me'
+
+apiInfo = 'OBRAX API © Hausman Systems LLC'
+apiVersion = '1.0.0'
+apiKey = b'\xb1\x17M\x98f\x13\xb8~\xd6\x16_!\x90\xf6lU\xae"\xed828\x08-(\x83\x8c\xdc\xcf\xc1\x16\xab'
+apiIV = b'W\x13M\xa4\x1f\xc7;p\x11\xbd\xf6on\x0fG\xf8'

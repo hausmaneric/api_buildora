@@ -1,0 +1,92 @@
+DEFAULT_TENANT_ROLES = {
+    'Administrador': [
+        'dashboard.read',
+        'companies.read',
+        'companies.write',
+        'users.read',
+        'users.write',
+        'roles.read',
+        'roles.write',
+        'permissions.read',
+        'permissions.write',
+        'roles.permissions.read',
+        'roles.permissions.write',
+        'projects.read',
+        'projects.write',
+        'teams.read',
+        'teams.write',
+        'diary.read',
+        'diary.write',
+        'diary.approve',
+        'production.read',
+        'production.write',
+        'reports.read',
+        'audit.read',
+    ],
+    'Engenheiro': [
+        'dashboard.read',
+        'projects.read',
+        'projects.write',
+        'teams.read',
+        'teams.write',
+        'diary.read',
+        'diary.write',
+        'diary.approve',
+        'production.read',
+        'production.write',
+        'reports.read',
+        'audit.read',
+    ],
+    'Encarregado': [
+        'dashboard.read',
+        'projects.read',
+        'teams.read',
+        'diary.read',
+        'diary.write',
+        'production.read',
+        'production.write',
+    ],
+}
+
+DEFAULT_STATUS_CATALOG = {
+    'project_status': [
+        {'value': 'active', 'label': 'Ativa'},
+        {'value': 'paused', 'label': 'Pausada'},
+        {'value': 'finished', 'label': 'Finalizada'},
+        {'value': 'cancelled', 'label': 'Cancelada'},
+    ],
+    'daily_log_status': [
+        {'value': 'draft', 'label': 'Rascunho'},
+        {'value': 'approved', 'label': 'Aprovado'},
+        {'value': 'rejected', 'label': 'Reprovado'},
+    ],
+    'occurrence_severity': [
+        {'value': 'low', 'label': 'Baixa'},
+        {'value': 'medium', 'label': 'Media'},
+        {'value': 'high', 'label': 'Alta'},
+        {'value': 'critical', 'label': 'Critica'},
+    ],
+}
+
+DEFAULT_FILTER_CATALOG = {
+    'diary': ['project_id', 'status', 'created_by', 'start_date', 'end_date'],
+    'production': ['project_id', 'created_by', 'start_date', 'end_date'],
+    'audit_logs': ['module', 'action', 'table_name', 'record_id', 'start_date', 'end_date', 'limit', 'offset'],
+    'audit_summary': ['module', 'start_date', 'end_date'],
+    'audit_timeline_project': ['project_id', 'limit'],
+    'audit_timeline_diary': ['diary_id', 'limit'],
+    'reports_project_diaries': ['project_id', 'start_date', 'end_date'],
+    'reports_project_summary': ['project_id', 'start_date', 'end_date'],
+    'dashboard_user_summary': ['project_id', 'start_date', 'end_date'],
+}
+
+DEFAULT_MODULE_CATALOG = [
+    {'code': 'dashboard', 'label': 'Dashboard'},
+    {'code': 'tenant', 'label': 'Administracao do ambiente'},
+    {'code': 'projects', 'label': 'Obras'},
+    {'code': 'teams', 'label': 'Equipes'},
+    {'code': 'diary', 'label': 'Diario de obra'},
+    {'code': 'production', 'label': 'Producao'},
+    {'code': 'reports', 'label': 'Relatorios'},
+    {'code': 'audit', 'label': 'Auditoria'},
+]

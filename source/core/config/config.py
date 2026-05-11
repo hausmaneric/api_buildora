@@ -1,0 +1,14 @@
+class appConfig:
+    apiName = 'OBRAX API'
+    apiVersion = '1.0.0'
+    apiInfo = 'OBRAX API'
+    databaseUrl = ''
+    dbHost = 'localhost'
+    dbPort = 5432
+    dbName = 'obrax'
+    dbUser = 'postgres'
+    dbPassword = ''
+    dbSslMode = 'prefer'
+    secretKey = 'change-me'
+    apiKey = b'\xb1\x17M\x98f\x13\xb8~\xd6\x16_!\x90\xf6lU\xae"\xed828\x08-(\x83\x8c\xdc\xcf\xc1\x16\xab'
+    apiIV = b'W\x13M\xa4\x1f\xc7;p\x11\xbd\xf6on\x0fG\xf8'
