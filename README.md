@@ -72,5 +72,7 @@ Avisos locais de legado:
 - `OBRAX_DB_PASSWORD`
 - `OBRAX_DB_SSLMODE`
 - `OBRAX_SECRET_KEY`
+- `OBRAX_SETUP_KEY`
 
 Em producao, prefira usar `OBRAX_DATABASE_URL` fornecida pelo Postgres do Railway.
+Use `OBRAX_SETUP_KEY` apenas no setup inicial via endpoint e troque ou remova apos a inicializacao.

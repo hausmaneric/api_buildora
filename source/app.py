@@ -39,6 +39,7 @@ def _read_runtime_config() -> dict:
         'OBRAX_DB_PASSWORD': os.getenv('OBRAX_DB_PASSWORD'),
         'OBRAX_DB_SSLMODE': os.getenv('OBRAX_DB_SSLMODE'),
         'OBRAX_SECRET_KEY': os.getenv('OBRAX_SECRET_KEY'),
+        'OBRAX_SETUP_KEY': os.getenv('OBRAX_SETUP_KEY'),
     }
     for key, value in env_map.items():
         if value not in [None, '']:
@@ -57,6 +58,7 @@ def _apply_runtime_config(config: dict) -> None:
     appConfig.dbPassword = config.get('OBRAX_DB_PASSWORD', appConfig.dbPassword)
     appConfig.dbSslMode = config.get('OBRAX_DB_SSLMODE', appConfig.dbSslMode)
     appConfig.secretKey = config.get('OBRAX_SECRET_KEY', appConfig.secretKey)
+    appConfig.setupKey = config.get('OBRAX_SETUP_KEY', appConfig.setupKey)
 
     if appConfig.dbPassword:
         try:

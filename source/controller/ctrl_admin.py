@@ -1,8 +1,14 @@
 from flask import request
 
 from source.app import app
+from source.core.config.config import appConfig
 from source.core.system.core import *
 from source.logic.orb_admin import *
+
+
+def _setup_key_valid() -> bool:
+    header_key = request.headers.get('X-Setup-Key', '').strip()
+    return bool(appConfig.setupKey) and header_key == appConfig.setupKey
 
 
 @app.route('/api/v1/admin/accounts/<token_id>', methods=['GET', 'POST'])
@@ -171,5 +177,46 @@ def admin_migrations_route(token_id):
                 r = admin_migrations_apply(nx)
     except Exception as e:
         r.make_error(0, 'Erro ao processar migrations administrativas', str(e))
+
+    return r.toJSON()
+
+
+@app.route('/api/v1/setup/status', methods=['GET'])
+def public_setup_status_route():
+    r = NXResult()
+    if not _setup_key_valid():
+        r.make_error(403, 'Chave de setup invalida')
+        return r.toJSON()
+
+    nx = NXMasterConnection()
+    try:
+        r = nx.active()
+        if r.status is True:
+            r = public_setup_status(nx)
+    except Exception as e:
+        r.make_error(0, 'Erro ao consultar status de setup inicial', str(e))
+    finally:
+        nx.stop()
+
+    return r.toJSON()
+
+
+@app.route('/api/v1/setup/initialize', methods=['POST'])
+def public_setup_initialize_route():
+    r = NXResult()
+    data = request.get_json(silent=True) or {}
+    if not _setup_key_valid():
+        r.make_error(403, 'Chave de setup invalida')
+        return r.toJSON()
+
+    nx = NXMasterConnection()
+    try:
+        r = nx.active()
+        if r.status is True:
+            r = public_setup_initialize(nx, data)
+    except Exception as e:
+        r.make_error(0, 'Erro ao executar setup inicial', str(e))
+    finally:
+        nx.stop()
 
     return r.toJSON()

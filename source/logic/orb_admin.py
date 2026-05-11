@@ -33,6 +33,20 @@ def _master_scope_ok(nx: Any) -> NXResult:
     return result
 
 
+def _master_users_count(nx: Any) -> tuple[NXResult, int]:
+    result = NXResult()
+    try:
+        rs = nx.xp_nx.FDXQuery(SQL_MASTER_USERS_LIST)
+        if rs.error:
+            result.make_error(0, 'Erro ao consultar usuarios master', rs.message)
+            return result, 0
+        result.status = True
+        return result, rs.dataset.recordcount
+    except Exception as e:
+        result.make_error(0, 'Erro ao consultar usuarios master', str(e))
+        return result, 0
+
+
 def _list_master(nx: Any, sql: str, error_message: str) -> NXResult:
     result = _master_scope_ok(nx)
     if result.error:
@@ -317,6 +331,10 @@ def admin_bootstrap_master(nx: Any, data: Any) -> NXResult:
     if result.error:
         return result
 
+    return _bootstrap_master_core(nx, data)
+
+
+def _bootstrap_master_core(nx: Any, data: Any) -> NXResult:
     result = NXResult()
     created = {
         'plans': [],
@@ -411,7 +429,7 @@ def admin_bootstrap_master(nx: Any, data: Any) -> NXResult:
         write_audit_log(
             nx._master,
             None,
-            nx.session.userid,
+            getattr(nx.session, 'userid', 0),
             'admin',
             'bootstrap',
             'master_seed',
@@ -559,6 +577,10 @@ def admin_migrations_apply(nx: Any) -> NXResult:
     if result.error:
         return result
 
+    return _migrations_apply_core(nx)
+
+
+def _migrations_apply_core(nx: Any) -> NXResult:
     result = NXResult()
     applied_files = []
     try:
@@ -594,7 +616,7 @@ def admin_migrations_apply(nx: Any) -> NXResult:
         write_audit_log(
             nx._master,
             None,
-            nx.session.userid,
+            getattr(nx.session, 'userid', 0),
             'admin',
             'migrations_apply',
             'database_metadata',
@@ -620,4 +642,50 @@ def admin_migrations_apply(nx: Any) -> NXResult:
         except Exception:
             pass
         result.make_error(0, process_error_message('aplicacao de migrations', 'bootstrap'), str(e))
+    return result
+
+
+def public_setup_status(nx: Any) -> NXResult:
+    result = NXResult()
+    try:
+        users_result, users_count = _master_users_count(nx)
+        if users_result.error:
+            return users_result
+        result.status = True
+        result.message = 'Status de setup inicial carregado com sucesso'
+        result.data = {
+            'setup_enabled': users_count == 0,
+            'master_users_count': users_count,
+            'schema_version': _metadata_value_by_key(nx, 'schema_version'),
+            'master_seed': _metadata_value_by_key(nx, 'master_seed'),
+        }
+    except Exception as e:
+        result.make_error(0, 'Erro ao consultar status de setup inicial', str(e))
+    return result
+
+
+def public_setup_initialize(nx: Any, data: Any) -> NXResult:
+    users_result, users_count = _master_users_count(nx)
+    if users_result.error:
+        return users_result
+    if users_count > 0:
+        result = NXResult()
+        result.make_error(403, 'Setup inicial ja foi executado')
+        return result
+
+    migrations_result = _migrations_apply_core(nx)
+    if migrations_result.error:
+        return migrations_result
+
+    bootstrap_result = _bootstrap_master_core(nx, data)
+    if bootstrap_result.error:
+        return bootstrap_result
+
+    result = NXResult()
+    result.status = True
+    result.message = 'Setup inicial executado com sucesso'
+    result.data = {
+        'migrations': migrations_result.data,
+        'bootstrap': bootstrap_result.data,
+    }
     return result
