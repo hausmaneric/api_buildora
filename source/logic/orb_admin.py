@@ -33,6 +33,15 @@ def _master_scope_ok(nx: Any) -> NXResult:
     return result
 
 
+def _master_audit_connection(nx: Any) -> Any:
+    return getattr(nx, '_master', nx)
+
+
+def _session_user_id(nx: Any) -> int:
+    session = getattr(nx, 'session', None)
+    return getattr(session, 'userid', 0) if session else 0
+
+
 def _master_users_count(nx: Any) -> tuple[NXResult, int]:
     result = NXResult()
     try:
@@ -111,9 +120,9 @@ def admin_accounts_create(nx: Any, data: Any) -> NXResult:
         if not rs.error:
             record = rs.dataset.recordset[0] if rs.dataset.recordset else {}
             write_audit_log(
-                nx._master,
+                _master_audit_connection(nx),
                 record.get('id'),
-                nx.session.userid,
+                _session_user_id(nx),
                 'admin',
                 'post',
                 'accounts',
@@ -156,9 +165,9 @@ def admin_plans_create(nx: Any, data: Any) -> NXResult:
         if not rs.error:
             record = rs.dataset.recordset[0] if rs.dataset.recordset else {}
             write_audit_log(
-                nx._master,
+                _master_audit_connection(nx),
                 None,
-                nx.session.userid,
+                _session_user_id(nx),
                 'admin',
                 'post',
                 'plans',
@@ -197,9 +206,9 @@ def admin_modules_create(nx: Any, data: Any) -> NXResult:
         if not rs.error:
             record = rs.dataset.recordset[0] if rs.dataset.recordset else {}
             write_audit_log(
-                nx._master,
+                _master_audit_connection(nx),
                 None,
-                nx.session.userid,
+                _session_user_id(nx),
                 'admin',
                 'post',
                 'modules',
@@ -237,9 +246,9 @@ def admin_account_modules_create(nx: Any, data: Any) -> NXResult:
         if not rs.error:
             record = rs.dataset.recordset[0] if rs.dataset.recordset else {}
             write_audit_log(
-                nx._master,
+                _master_audit_connection(nx),
                 data.get('account_id'),
-                nx.session.userid,
+                _session_user_id(nx),
                 'admin',
                 'post',
                 'account_modules',
@@ -289,9 +298,9 @@ def admin_master_users_create(nx: Any, data: Any) -> NXResult:
                 'active': data.get('active', True),
             }
             write_audit_log(
-                nx._master,
+                _master_audit_connection(nx),
                 None,
-                nx.session.userid,
+                _session_user_id(nx),
                 'admin',
                 'post',
                 'master_users',
@@ -438,9 +447,9 @@ def _bootstrap_master_core(nx: Any, data: Any) -> NXResult:
             created['metadata'].append(updated.dataset.recordset[0] if updated.dataset.recordset else {})
 
         write_audit_log(
-            nx._master,
+            _master_audit_connection(nx),
             None,
-            getattr(nx.session, 'userid', 0),
+            _session_user_id(nx),
             'admin',
             'bootstrap',
             'master_seed',
@@ -631,9 +640,9 @@ def _migrations_apply_core(nx: Any) -> NXResult:
             applied_files.append(migration['file'])
 
         write_audit_log(
-            nx._master,
+            _master_audit_connection(nx),
             None,
-            getattr(nx.session, 'userid', 0),
+            _session_user_id(nx),
             'admin',
             'migrations_apply',
             'database_metadata',
