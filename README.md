@@ -58,6 +58,7 @@ Avisos locais de legado:
 - `runtime.txt`: `python-3.12.8`
 - dependencias: `requirements.txt`
 - `railway.json`: start command e healthcheck para Railway
+- `.env.example`: referencia de variaveis para producao
 
 ## Variaveis Railway
 

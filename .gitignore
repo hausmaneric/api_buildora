@@ -10,5 +10,6 @@ venv/
 env/
 .env
 .env.*
+!.env.example
 _config.server.json
 *.log
