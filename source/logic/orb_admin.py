@@ -714,7 +714,9 @@ def admin_master_users_list(nx: Any, data: Any | None = None) -> NXResult:
     payload = data or {}
     if any(key in payload for key in ('search', 'sort_field', 'sort_direction', 'limit', 'offset')):
         search, sort_field, sort_direction, limit, offset = _request_paging(payload)
-        return _paged_master(nx, SQL_MASTER_USERS_LIST_PAGED, SQL_MASTER_USERS_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar usuarios master')
+        paged_result = _paged_master(nx, SQL_MASTER_USERS_LIST_PAGED, SQL_MASTER_USERS_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar usuarios master')
+        if paged_result.status:
+            return paged_result
     return _list_master(nx, SQL_MASTER_USERS_LIST, 'Erro ao consultar usuarios master')
 
 
