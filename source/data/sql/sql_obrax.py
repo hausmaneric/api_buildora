@@ -380,6 +380,18 @@ INSERT INTO account_modules (
 RETURNING id
 """
 
+SQL_ACCOUNT_MODULE_BY_ACCOUNT_AND_MODULE = """
+SELECT id,
+       account_id,
+       module_id,
+       active,
+       created_at
+  FROM account_modules
+ WHERE account_id = %s
+   AND module_id = %s
+ LIMIT 1
+"""
+
 SQL_TENANT_COMPANIES_LIST = """
 SELECT id,
        code,

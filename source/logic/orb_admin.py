@@ -5,6 +5,7 @@ from source.core.system.database import NXMasterConnection
 from source.core.system.security import hash_password, write_audit_log
 from source.core.system.utils import NXResult, process_error_message, success_message
 from source.data.sql.sql_obrax import (
+    SQL_ACCOUNT_MODULE_BY_ACCOUNT_AND_MODULE,
     SQL_ACCOUNT_MODULE_INSERT,
     SQL_ACCOUNT_MODULES_LIST,
     SQL_DATABASE_METADATA_BY_KEY,
@@ -196,6 +197,16 @@ def admin_modules_create(nx: Any, data: Any) -> NXResult:
 
     result = NXResult()
     try:
+        existing_rs = nx.xp_nx.FDXQuery(SQL_MASTER_MODULE_BY_CODE, data.get('code'))
+        if existing_rs.error:
+            result.make_error(0, 'Erro ao consultar modulo existente', existing_rs.message)
+            return result
+        if existing_rs.dataset.recordcount > 0:
+            result.status = True
+            result.message = success_message('Modulo', 'status')
+            result.data = existing_rs.dataset.recordset[0]
+            return result
+
         rs = nx.xp_nx.FDXQuery(
             SQL_MASTER_MODULE_INSERT,
             data.get('code'),
@@ -237,10 +248,41 @@ def admin_account_modules_create(nx: Any, data: Any) -> NXResult:
 
     result = NXResult()
     try:
+        module_id = data.get('module_id')
+        module_code = data.get('module_code')
+
+        if not module_id and module_code:
+            module_rs = nx.xp_nx.FDXQuery(SQL_MASTER_MODULE_BY_CODE, module_code)
+            if module_rs.error:
+                result.make_error(0, 'Erro ao localizar modulo pelo codigo', module_rs.message)
+                return result
+            if module_rs.dataset.recordcount == 0:
+                result.make_error(0, f'Modulo nao localizado para o codigo {module_code}')
+                return result
+            module_id = module_rs.dataset.recordset[0].get('id')
+
+        if not module_id:
+            result.make_error(0, 'module_id ou module_code e obrigatorio')
+            return result
+
+        existing_rs = nx.xp_nx.FDXQuery(
+            SQL_ACCOUNT_MODULE_BY_ACCOUNT_AND_MODULE,
+            data.get('account_id'),
+            module_id,
+        )
+        if existing_rs.error:
+            result.make_error(0, 'Erro ao verificar vinculo existente', existing_rs.message)
+            return result
+        if existing_rs.dataset.recordcount > 0:
+            result.status = True
+            result.message = success_message('Vinculo de modulo', 'status')
+            result.data = existing_rs.dataset.recordset[0]
+            return result
+
         rs = nx.xp_nx.FDXQuery(
             SQL_ACCOUNT_MODULE_INSERT,
             data.get('account_id'),
-            data.get('module_id'),
+            module_id,
             data.get('active', True),
         )
         if not rs.error:
@@ -254,7 +296,10 @@ def admin_account_modules_create(nx: Any, data: Any) -> NXResult:
                 'account_modules',
                 record.get('id'),
                 '',
-                data,
+                {
+                    **data,
+                    'module_id': module_id,
+                },
             )
             result.status = True
             result.message = success_message('Vinculo de modulo', 'create')
