@@ -39,8 +39,16 @@ def _master_users_count(nx: Any) -> tuple[NXResult, int]:
         rs = nx.xp_nx.FDXQuery(SQL_MASTER_USERS_LIST)
         if rs.error:
             if 'does not exist' in (rs.message or '').lower() and 'master_users' in (rs.message or '').lower():
+                try:
+                    nx.conn_nx.rollback()
+                except Exception:
+                    pass
                 result.status = True
                 return result, 0
+            try:
+                nx.conn_nx.rollback()
+            except Exception:
+                pass
             result.make_error(0, 'Erro ao consultar usuarios master', rs.message)
             return result, 0
         result.status = True
@@ -539,7 +547,13 @@ def _available_migrations() -> list[dict[str, str]]:
 
 def _metadata_value_by_key(nx: Any, metadata_key: str) -> str | None:
     rs = nx.xp_nx.FDXQuery(SQL_DATABASE_METADATA_BY_KEY, metadata_key)
-    if rs.error or rs.dataset.recordcount == 0:
+    if rs.error:
+        try:
+            nx.conn_nx.rollback()
+        except Exception:
+            pass
+        return None
+    if rs.dataset.recordcount == 0:
         return None
     return rs.dataset.recordset[0].get('metadata_value')
 
