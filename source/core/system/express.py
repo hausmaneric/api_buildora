@@ -156,17 +156,25 @@ class FDExpress:
     def _make_cursor(self):
         return self.conn.cursor(cursor_factory=RealDictCursor)
 
+    def _is_write_sql(self, sql: str) -> bool:
+        normalized = (sql or '').lstrip().upper()
+        return normalized.startswith(('INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP', 'TRUNCATE'))
+
     def FDXQuery(self, sql: str, *params: Any) -> FDResulSet:
         result = FDResulSet()
         cur = self._make_cursor()
         try:
             cur.execute(sql, params)
-            rows = cur.fetchall()
+            rows = cur.fetchall() if cur.description else []
             columns = [desc.name for desc in cur.description] if cur.description else []
             result.dataset = FDDataSet([dict(row) for row in rows], columns)
+            if self._is_write_sql(sql) and not self.batch_mode:
+                self.conn.commit()
         except Exception as e:
             result.error = True
             result.message = str(e)
+            if not self.batch_mode:
+                self.conn.rollback()
         finally:
             cur.close()
         return result
