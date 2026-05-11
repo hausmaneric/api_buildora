@@ -38,6 +38,9 @@ def _master_users_count(nx: Any) -> tuple[NXResult, int]:
     try:
         rs = nx.xp_nx.FDXQuery(SQL_MASTER_USERS_LIST)
         if rs.error:
+            if 'does not exist' in (rs.message or '').lower() and 'master_users' in (rs.message or '').lower():
+                result.status = True
+                return result, 0
             result.make_error(0, 'Erro ao consultar usuarios master', rs.message)
             return result, 0
         result.status = True
@@ -648,6 +651,8 @@ def _migrations_apply_core(nx: Any) -> NXResult:
 def public_setup_status(nx: Any) -> NXResult:
     result = NXResult()
     try:
+        schema_version = _metadata_value_by_key(nx, 'schema_version')
+        master_seed = _metadata_value_by_key(nx, 'master_seed')
         users_result, users_count = _master_users_count(nx)
         if users_result.error:
             return users_result
@@ -656,8 +661,9 @@ def public_setup_status(nx: Any) -> NXResult:
         result.data = {
             'setup_enabled': users_count == 0,
             'master_users_count': users_count,
-            'schema_version': _metadata_value_by_key(nx, 'schema_version'),
-            'master_seed': _metadata_value_by_key(nx, 'master_seed'),
+            'schema_version': schema_version,
+            'master_seed': master_seed,
+            'schema_ready': schema_version is not None,
         }
     except Exception as e:
         result.make_error(0, 'Erro ao consultar status de setup inicial', str(e))
@@ -665,6 +671,10 @@ def public_setup_status(nx: Any) -> NXResult:
 
 
 def public_setup_initialize(nx: Any, data: Any) -> NXResult:
+    migrations_result = _migrations_apply_core(nx)
+    if migrations_result.error:
+        return migrations_result
+
     users_result, users_count = _master_users_count(nx)
     if users_result.error:
         return users_result
@@ -672,10 +682,6 @@ def public_setup_initialize(nx: Any, data: Any) -> NXResult:
         result = NXResult()
         result.make_error(403, 'Setup inicial ja foi executado')
         return result
-
-    migrations_result = _migrations_apply_core(nx)
-    if migrations_result.error:
-        return migrations_result
 
     bootstrap_result = _bootstrap_master_core(nx, data)
     if bootstrap_result.error:
