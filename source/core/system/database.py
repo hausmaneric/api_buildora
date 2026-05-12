@@ -1,6 +1,7 @@
 from typing import Any
 
 import psycopg2
+from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 
 from source.core.config.config import appConfig  # noqa: E402
@@ -63,24 +64,50 @@ def validate_master_database_config() -> dict:
 
 
 class NXDatabaseConnection:
+    _pool_registry: dict[str, pool.SimpleConnectionPool] = {}
+
     def __init__(self) -> None:
         self.result = NXResult()
         self.conn_nx = None
         self.xp_nx = None
         self.activate = False
+        self._pool_key = None
 
     def stop(self):
         if self.activate and self.conn_nx:
-            self.conn_nx.close()
+            try:
+                if self._pool_key and self._pool_key in self._pool_registry:
+                    self._pool_registry[self._pool_key].putconn(self.conn_nx)
+                else:
+                    self.conn_nx.close()
+            except Exception:
+                try:
+                    self.conn_nx.close()
+                except Exception:
+                    pass
         self.activate = False
         self.conn_nx = None
         self.xp_nx = None
+        self._pool_key = None
+
+    @classmethod
+    def _get_pool(cls, connection_string: str) -> pool.SimpleConnectionPool:
+        if connection_string not in cls._pool_registry:
+            cls._pool_registry[connection_string] = pool.SimpleConnectionPool(
+                minconn=1,
+                maxconn=10,
+                dsn=connection_string,
+                cursor_factory=RealDictCursor,
+            )
+        return cls._pool_registry[connection_string]
 
     def _open(self, connection_string: str, error_message: str) -> NXResult:
         result = NXResult()
         try:
-            self.conn_nx = psycopg2.connect(connection_string, cursor_factory=RealDictCursor)
+            conn_pool = self._get_pool(connection_string)
+            self.conn_nx = conn_pool.getconn()
             self.xp_nx = FDExpress(self.conn_nx)
+            self._pool_key = connection_string
             self.activate = True
             result.status = True
         except Exception as e:
