@@ -237,9 +237,7 @@ SELECT id,
        storage_limit_mb,
        storage_used_mb,
        expiration_date,
-       active,
-       created_at,
-       updated_at
+       active
   FROM accounts
  ORDER BY id DESC
 """
@@ -256,9 +254,7 @@ SELECT id,
        storage_limit_mb,
        storage_used_mb,
        expiration_date,
-       active,
-       created_at,
-       updated_at
+       active
   FROM accounts
  WHERE (%s = '' OR code ILIKE %s OR name ILIKE %s OR email ILIKE %s OR document ILIKE %s)
  ORDER BY
@@ -268,8 +264,6 @@ SELECT id,
    CASE WHEN %s = 'name' AND %s = 'desc' THEN name END DESC,
    CASE WHEN %s = 'email' AND %s = 'asc' THEN email END ASC,
    CASE WHEN %s = 'email' AND %s = 'desc' THEN email END DESC,
-   CASE WHEN %s = 'created_at' AND %s = 'asc' THEN created_at END ASC,
-   CASE WHEN %s = 'created_at' AND %s = 'desc' THEN created_at END DESC,
    id DESC
  LIMIT %s OFFSET %s
 """
@@ -369,8 +363,7 @@ SELECT id,
        max_users,
        max_works,
        max_storage_mb,
-       active,
-       created_at
+       active
   FROM plans
  ORDER BY id DESC
 """
@@ -384,8 +377,7 @@ SELECT id,
        max_users,
        max_works,
        max_storage_mb,
-       active,
-       created_at
+       active
   FROM plans
  WHERE (%s = '' OR name ILIKE %s OR description ILIKE %s OR name ILIKE %s OR description ILIKE %s)
  ORDER BY
@@ -393,8 +385,6 @@ SELECT id,
    CASE WHEN %s = 'name' AND %s = 'desc' THEN name END DESC,
    CASE WHEN %s = 'price' AND %s = 'asc' THEN price END ASC,
    CASE WHEN %s = 'price' AND %s = 'desc' THEN price END DESC,
-   CASE WHEN %s = 'created_at' AND %s = 'asc' THEN created_at END ASC,
-   CASE WHEN %s = 'created_at' AND %s = 'desc' THEN created_at END DESC,
    id DESC
  LIMIT %s OFFSET %s
 """
@@ -459,8 +449,7 @@ SELECT id,
        code,
        name,
        description,
-       active,
-       created_at
+       active
   FROM modules
  ORDER BY id DESC
 """
@@ -470,8 +459,7 @@ SELECT id,
        code,
        name,
        description,
-       active,
-       created_at
+       active
   FROM modules
  WHERE (%s = '' OR code ILIKE %s OR name ILIKE %s OR description ILIKE %s OR code ILIKE %s)
  ORDER BY
@@ -479,8 +467,6 @@ SELECT id,
    CASE WHEN %s = 'code' AND %s = 'desc' THEN code END DESC,
    CASE WHEN %s = 'name' AND %s = 'asc' THEN name END ASC,
    CASE WHEN %s = 'name' AND %s = 'desc' THEN name END DESC,
-   CASE WHEN %s = 'created_at' AND %s = 'asc' THEN created_at END ASC,
-   CASE WHEN %s = 'created_at' AND %s = 'desc' THEN created_at END DESC,
    id DESC
  LIMIT %s OFFSET %s
 """
@@ -642,8 +628,7 @@ SELECT am.id,
        am.module_id,
        m.code AS module_code,
        m.name AS module_name,
-       am.active,
-       am.created_at
+       am.active
   FROM account_modules am
   JOIN accounts a ON a.id = am.account_id
   JOIN modules m ON m.id = am.module_id
@@ -657,8 +642,7 @@ SELECT am.id,
        am.module_id,
        m.code AS module_code,
        m.name AS module_name,
-       am.active,
-       am.created_at
+       am.active
   FROM account_modules am
   JOIN accounts a ON a.id = am.account_id
   JOIN modules m ON m.id = am.module_id
@@ -668,8 +652,6 @@ SELECT am.id,
    CASE WHEN %s = 'account_name' AND %s = 'desc' THEN a.name END DESC,
    CASE WHEN %s = 'module_code' AND %s = 'asc' THEN m.code END ASC,
    CASE WHEN %s = 'module_code' AND %s = 'desc' THEN m.code END DESC,
-   CASE WHEN %s = 'created_at' AND %s = 'asc' THEN am.created_at END ASC,
-   CASE WHEN %s = 'created_at' AND %s = 'desc' THEN am.created_at END DESC,
    am.id DESC
  LIMIT %s OFFSET %s
 """
