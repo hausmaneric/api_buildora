@@ -1,6 +1,7 @@
 import base64
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 import jsonpickle
@@ -53,7 +54,27 @@ class NXBase:
             for key, value in self.__dict__.items()
             if not key.startswith('_') and value is not None
         }
-        return json.dumps(data, default=lambda o: o.__dict__, ensure_ascii=False, indent=4)
+        return json.dumps(_json_safe(data), ensure_ascii=False, indent=4)
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_json_safe(item) for item in value]
+    if hasattr(value, '__dict__'):
+        return {
+            key: _json_safe(item)
+            for key, item in value.__dict__.items()
+            if not key.startswith('_') and item is not None
+        }
+    return value
 
 
 class NXResult(NXBase):
