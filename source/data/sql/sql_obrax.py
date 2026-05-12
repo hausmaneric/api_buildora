@@ -387,7 +387,7 @@ SELECT id,
        active,
        created_at
   FROM plans
- WHERE (%s = '' OR name ILIKE %s OR description ILIKE %s)
+ WHERE (%s = '' OR name ILIKE %s OR description ILIKE %s OR name ILIKE %s OR description ILIKE %s)
  ORDER BY
    CASE WHEN %s = 'name' AND %s = 'asc' THEN name END ASC,
    CASE WHEN %s = 'name' AND %s = 'desc' THEN name END DESC,
@@ -473,7 +473,7 @@ SELECT id,
        active,
        created_at
   FROM modules
- WHERE (%s = '' OR code ILIKE %s OR name ILIKE %s OR description ILIKE %s)
+ WHERE (%s = '' OR code ILIKE %s OR name ILIKE %s OR description ILIKE %s OR code ILIKE %s)
  ORDER BY
    CASE WHEN %s = 'code' AND %s = 'asc' THEN code END ASC,
    CASE WHEN %s = 'code' AND %s = 'desc' THEN code END DESC,
@@ -666,7 +666,7 @@ SELECT am.id,
   FROM account_modules am
   JOIN accounts a ON a.id = am.account_id
   JOIN modules m ON m.id = am.module_id
- WHERE (%s = '' OR a.name ILIKE %s OR m.code ILIKE %s OR m.name ILIKE %s)
+ WHERE (%s = '' OR a.name ILIKE %s OR m.code ILIKE %s OR m.name ILIKE %s OR a.name ILIKE %s)
  ORDER BY
    CASE WHEN %s = 'account_name' AND %s = 'asc' THEN a.name END ASC,
    CASE WHEN %s = 'account_name' AND %s = 'desc' THEN a.name END DESC,
