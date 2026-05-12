@@ -214,7 +214,7 @@ def admin_accounts_list(nx: Any, data: Any | None = None) -> NXResult:
     payload = data or {}
     if any(key in payload for key in ('search', 'sort_field', 'sort_direction', 'limit', 'offset')):
         search, sort_field, sort_direction, limit, offset = _request_paging(payload)
-        return _paged_master(
+        paged_result = _paged_master(
             nx,
             SQL_MASTER_ACCOUNTS_LIST_PAGED,
             SQL_MASTER_ACCOUNTS_COUNT,
@@ -225,6 +225,8 @@ def admin_accounts_list(nx: Any, data: Any | None = None) -> NXResult:
             offset,
             'Erro ao consultar contas administrativas',
         )
+        if paged_result.status:
+            return paged_result
     return _list_master(nx, SQL_MASTER_ACCOUNTS_LIST, 'Erro ao consultar contas administrativas')
 
 
@@ -354,7 +356,9 @@ def admin_plans_list(nx: Any, data: Any | None = None) -> NXResult:
     payload = data or {}
     if any(key in payload for key in ('search', 'sort_field', 'sort_direction', 'limit', 'offset')):
         search, sort_field, sort_direction, limit, offset = _request_paging(payload)
-        return _paged_master(nx, SQL_MASTER_PLANS_LIST_PAGED, SQL_MASTER_PLANS_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar planos administrativos')
+        paged_result = _paged_master(nx, SQL_MASTER_PLANS_LIST_PAGED, SQL_MASTER_PLANS_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar planos administrativos')
+        if paged_result.status:
+            return paged_result
     return _list_master(nx, SQL_MASTER_PLANS_LIST, 'Erro ao consultar planos administrativos')
 
 
@@ -460,7 +464,9 @@ def admin_modules_list(nx: Any, data: Any | None = None) -> NXResult:
     payload = data or {}
     if any(key in payload for key in ('search', 'sort_field', 'sort_direction', 'limit', 'offset')):
         search, sort_field, sort_direction, limit, offset = _request_paging(payload)
-        return _paged_master(nx, SQL_MASTER_MODULES_LIST_PAGED, SQL_MASTER_MODULES_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar modulos administrativos')
+        paged_result = _paged_master(nx, SQL_MASTER_MODULES_LIST_PAGED, SQL_MASTER_MODULES_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar modulos administrativos')
+        if paged_result.status:
+            return paged_result
     return _list_master(nx, SQL_MASTER_MODULES_LIST, 'Erro ao consultar modulos administrativos')
 
 
@@ -568,7 +574,9 @@ def admin_account_modules_list(nx: Any, data: Any | None = None) -> NXResult:
     payload = data or {}
     if any(key in payload for key in ('search', 'sort_field', 'sort_direction', 'limit', 'offset')):
         search, sort_field, sort_direction, limit, offset = _request_paging(payload)
-        return _paged_master(nx, SQL_ACCOUNT_MODULES_LIST_PAGED, SQL_ACCOUNT_MODULES_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar modulos da conta')
+        paged_result = _paged_master(nx, SQL_ACCOUNT_MODULES_LIST_PAGED, SQL_ACCOUNT_MODULES_COUNT, search, sort_field, sort_direction, limit, offset, 'Erro ao consultar modulos da conta')
+        if paged_result.status:
+            return paged_result
     return _list_master(nx, SQL_ACCOUNT_MODULES_LIST, 'Erro ao consultar modulos da conta')
 
 
