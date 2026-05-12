@@ -535,8 +535,7 @@ SELECT id,
        email,
        phone,
        role,
-       active,
-       created_at
+       active
   FROM master_users
  ORDER BY id DESC
 """
@@ -548,8 +547,7 @@ SELECT id,
        email,
        phone,
        role,
-       active,
-       created_at
+       active
   FROM master_users
  WHERE (%s = '' OR name ILIKE %s OR login ILIKE %s OR email ILIKE %s OR role ILIKE %s)
  ORDER BY
@@ -557,8 +555,6 @@ SELECT id,
    CASE WHEN %s = 'name' AND %s = 'desc' THEN name END DESC,
    CASE WHEN %s = 'login' AND %s = 'asc' THEN login END ASC,
    CASE WHEN %s = 'login' AND %s = 'desc' THEN login END DESC,
-   CASE WHEN %s = 'created_at' AND %s = 'asc' THEN created_at END ASC,
-   CASE WHEN %s = 'created_at' AND %s = 'desc' THEN created_at END DESC,
    id DESC
  LIMIT %s OFFSET %s
 """
