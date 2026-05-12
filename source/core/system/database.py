@@ -77,7 +77,8 @@ class NXDatabaseConnection:
         if self.activate and self.conn_nx:
             try:
                 if self._pool_key and self._pool_key in self._pool_registry:
-                    self._pool_registry[self._pool_key].putconn(self.conn_nx)
+                    close_bad = bool(getattr(self.conn_nx, 'closed', 0))
+                    self._pool_registry[self._pool_key].putconn(self.conn_nx, close=close_bad)
                 else:
                     self.conn_nx.close()
             except Exception:
@@ -101,18 +102,63 @@ class NXDatabaseConnection:
             )
         return cls._pool_registry[connection_string]
 
+    @classmethod
+    def _reset_pool(cls, connection_string: str) -> None:
+        existing = cls._pool_registry.pop(connection_string, None)
+        if existing:
+            try:
+                existing.closeall()
+            except Exception:
+                pass
+
+    def _validate_connection(self, connection: psycopg2.extensions.connection) -> None:
+        if getattr(connection, 'closed', 0):
+            raise psycopg2.OperationalError('Conexao encerrada pelo servidor')
+
+        cursor = connection.cursor(cursor_factory=RealDictCursor)
+        try:
+            cursor.execute('SELECT 1 AS ok')
+            cursor.fetchone()
+            connection.rollback()
+        finally:
+            cursor.close()
+
     def _open(self, connection_string: str, error_message: str) -> NXResult:
         result = NXResult()
-        try:
-            conn_pool = self._get_pool(connection_string)
-            self.conn_nx = conn_pool.getconn()
-            self.xp_nx = FDExpress(self.conn_nx)
-            self._pool_key = connection_string
-            self.activate = True
-            result.status = True
-        except Exception as e:
-            result.make_error(0, error_message, str(e))
-            self.activate = False
+        last_error = None
+
+        for attempt in range(2):
+            try:
+                conn_pool = self._get_pool(connection_string)
+                candidate = conn_pool.getconn()
+                try:
+                    self._validate_connection(candidate)
+                except Exception:
+                    try:
+                        conn_pool.putconn(candidate, close=True)
+                    except Exception:
+                        try:
+                            candidate.close()
+                        except Exception:
+                            pass
+                    raise
+
+                self.conn_nx = candidate
+                self.xp_nx = FDExpress(self.conn_nx)
+                self._pool_key = connection_string
+                self.activate = True
+                result.status = True
+                return result
+            except Exception as e:
+                last_error = e
+                self.activate = False
+                self.conn_nx = None
+                self.xp_nx = None
+                self._pool_key = None
+                if attempt == 0:
+                    self._reset_pool(connection_string)
+
+        result.make_error(0, error_message, str(last_error))
         return result
 
 
