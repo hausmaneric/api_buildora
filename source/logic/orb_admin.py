@@ -182,7 +182,7 @@ def _paged_master(nx: Any, sql: str, count_sql: str | None, search: str, sort_fi
 
 def _request_paging(data: Any) -> tuple[str, str, str, int, int]:
     search = (data.get('search') or '').strip()
-    sort_field = (data.get('sort_field') or data.get('sort_by') or 'created_at').strip()
+    sort_field = (data.get('sort_field') or data.get('sort_by') or 'id').strip()
     sort_direction = (data.get('sort_direction') or data.get('sort_dir') or 'desc').strip().lower()
     if sort_direction not in {'asc', 'desc'}:
         sort_direction = 'desc'
